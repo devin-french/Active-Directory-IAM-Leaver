@@ -6,7 +6,7 @@
 
 This hands-on lab documents the **Leaver** phase of the Joiner–Mover–Leaver (JML) identity lifecycle. I used **Active Directory Users and Computers (ADUC)** and **Windows PowerShell** to review a departing employee's account, disable the identity, remove departmental group access, and validate the directory state.
 
-The evidence is from my own Azure-hosted Active Directory homelab. Each screenshot below is included in this repository under `images/`.
+The evidence is from my own Azure-hosted Active Directory homelab. Each screenshot below is included in this repository and linked using its relative file path.
 
 ## Business scenario
 
@@ -32,49 +32,56 @@ The evidence is from my own Azure-hosted Active Directory homelab. Each screensh
 
 I began by querying the employee account in PowerShell to establish the initial identity and department attributes before offboarding. Capturing a baseline makes it easier to verify changes afterward.
 
-![PowerShell account baseline](/01-account-baseline.png)
+![PowerShell account baseline](images/01-account-baseline.png)
 
 ### 2. Locate the employee in ADUC
 
 I opened Active Directory Users and Computers and navigated the organizational unit (OU) structure to locate the account for administration.
 
-![ADUC account location](/02-aduc-account-location.png)
+![ADUC account location](images/02-aduc-account-location.png)
 
 ### 3. Review existing group memberships
 
 Before removing permissions, I checked the employee's current security group memberships using PowerShell. This provides a record of the access that must be evaluated during offboarding.
 
-![PowerShell membership baseline](/03-group-membership-baseline.png)
+![PowerShell membership baseline](images/03-group-membership-baseline.png)
 
 ### 4. Disable the Active Directory account
 
 I used ADUC's account administration controls to disable the departing user's account. Disabling the identity is the central control for preventing new domain authentication using that account.
 
-![ADUC account disable action](/04-disable-account.png)
+![ADUC account disable action](images/04-disable-account.png)
 
 ### 5. Remove departmental security group access
 
 I reviewed the account's group membership properties and removed the Finance-related membership, reducing residual authorization granted through that group.
 
-![Group membership removal](/05-remove-finance-membership.png)
+![Group membership removal](images/05-remove-finance-membership.png)
 
 ### 6. Review account placement in ADUC
 
 I reviewed the account in the ADUC organizational unit structure as part of the offboarding workflow. In this lab, the intended destination for inactive identities was the `DISABLED_USERS` OU.
 
-![ADUC organizational unit review](/06-account-ou-review.png)
+![ADUC organizational unit review](images/06-account-ou-review.png)
 
 ### 7. Validate the post-change account state
 
 I returned to PowerShell to check account attributes and memberships after the administrative changes. This is the most important evidence for confirming that account disablement and Finance group removal were applied in Active Directory.
 
-![PowerShell post-change verification](/07-powershell-postchange-verification.png)
+![PowerShell post-change verification](images/07-powershell-postchange-verification.png)
 
-### 8. Attempt to connect to Client-1 (test limitation)
+### 8. Verify Remote Desktop access is denied for the disabled account
 
-I attempted to access **Client-1** from the virtual machine application, but the application displayed a **connection error**. This screenshot documents a client-VM connection problem; **it is not proof that Active Directory denied David Thompson a domain sign-in**. A valid authentication test would require connecting to Client-1 and attempting a *fresh* sign-in with the disabled domain identity, then capturing the Windows sign-in rejection.
+After disabling David Thompson's Active Directory account, I attempted a new Remote Desktop connection to **Client-1** through Windows App using the offboarded account. Windows App rejected the connection with an explicit account-status message:
 
-![Client-1 virtual machine connection error](/08-client1-connection-error.png)
+> We couldn't connect to the remote PC because your account has been disabled.
+
+**Error code:** `0xb07`  
+**Result:** **PASS — Remote Desktop connection rejected because the account was disabled.**
+
+![Client-1 Remote Desktop rejected because the account is disabled](images/08-disabled-account-rdp-denied.png)
+
+This is stronger than a generic network connectivity error: the message identifies **account disablement** as the reason the remote session could not be established. The screenshot demonstrates rejection of this new RDP connection; it does not establish that all existing sessions or independent application tokens were revoked.
 
 ## Results
 
@@ -86,7 +93,7 @@ I attempted to access **Client-1** from the virtual machine application, but the
 | Departmental group access removal | Documented | Step 5 |
 | OU/account review | Documented | Step 6 |
 | Post-change directory verification | Documented | Step 7 |
-| Fresh Client-1 domain sign-in denied | **Not verified** — VM connection error | Step 8 |
+| New Client-1 Remote Desktop connection rejected for disabled account | **PASS** — Windows App explicitly reports disabled account (`0xb07`) | Step 8 |
 
 **Scope note:** AD account disabling does not automatically terminate every existing session or revoke access in independent cloud/SaaS applications. Production offboarding may additionally require session/token revocation, application deprovisioning, device recovery, and ticket approvals.
 
@@ -123,10 +130,14 @@ See [`scripts/verify-leaver.ps1`](scripts/verify-leaver.ps1) for a reusable **re
 - **Role-based access control (RBAC):** managing access via security groups
 - **Verification and audit evidence:** checking the resulting directory state and retaining screenshots
 
+## Business outcome
+
+This lab demonstrates a repeatable employee offboarding workflow: establish an identity and access baseline, disable the departing employee’s AD account, remove Finance group access, and verify the resulting directory state with PowerShell. These controls reduce the risk of former employees retaining unnecessary access and create a clear record for IAM review. The Client-1 Remote Desktop test confirms that a new connection using the disabled account was rejected with an account-disabled error.
+
 ## Repository structure
 
 ```text
-Active-Directory-IAM-Leaver-Repository/
+Active-Directory-IAM-Leaver/
 ├── README.md
 ├── images/
 │   ├── 01-account-baseline.png
@@ -136,7 +147,7 @@ Active-Directory-IAM-Leaver-Repository/
 │   ├── 05-remove-finance-membership.png
 │   ├── 06-account-ou-review.png
 │   ├── 07-powershell-postchange-verification.png
-│   └── 08-client1-connection-error.png
+│   └── 08-disabled-account-rdp-denied.png
 ├── scripts/
 │   └── verify-leaver.ps1
 └── docs/
@@ -145,7 +156,7 @@ Active-Directory-IAM-Leaver-Repository/
 
 ## Lessons learned
 
-Offboarding should be **verified**, not merely performed. ADUC changes should be checked with PowerShell, and client authentication testing must be distinguished from connectivity problems. Clear screenshots and documented limitations make IAM evidence more trustworthy.
+Offboarding should be **verified**, not merely performed. ADUC changes should be checked with PowerShell, and an explicit disabled-account authentication rejection is distinct from a generic connectivity failure. Clear screenshots and documented limitations make IAM evidence more trustworthy.
 
 ## Author
 
