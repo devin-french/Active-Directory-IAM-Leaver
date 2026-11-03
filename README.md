@@ -32,43 +32,43 @@ The evidence is from my own Azure-hosted Active Directory homelab. Each screensh
 
 I began by querying the employee account in PowerShell to establish the initial identity and department attributes before offboarding. Capturing a baseline makes it easier to verify changes afterward.
 
-![PowerShell account baseline](images/01-account-baseline.png)
+![PowerShell account baseline](/01-account-baseline.png)
 
 ### 2. Locate the employee in ADUC
 
 I opened Active Directory Users and Computers and navigated the organizational unit (OU) structure to locate the account for administration.
 
-![ADUC account location](images/02-aduc-account-location.png)
+![ADUC account location](/02-aduc-account-location.png)
 
 ### 3. Review existing group memberships
 
 Before removing permissions, I checked the employee's current security group memberships using PowerShell. This provides a record of the access that must be evaluated during offboarding.
 
-![PowerShell membership baseline](images/03-group-membership-baseline.png)
+![PowerShell membership baseline](/03-group-membership-baseline.png)
 
 ### 4. Disable the Active Directory account
 
 I used ADUC's account administration controls to disable the departing user's account. Disabling the identity is the central control for preventing new domain authentication using that account.
 
-![ADUC account disable action](images/04-disable-account.png)
+![ADUC account disable action](/04-disable-account.png)
 
 ### 5. Remove departmental security group access
 
 I reviewed the account's group membership properties and removed the Finance-related membership, reducing residual authorization granted through that group.
 
-![Group membership removal](images/05-remove-finance-membership.png)
+![Group membership removal](/05-remove-finance-membership.png)
 
 ### 6. Review account placement in ADUC
 
 I reviewed the account in the ADUC organizational unit structure as part of the offboarding workflow. In this lab, the intended destination for inactive identities was the `DISABLED_USERS` OU.
 
-![ADUC organizational unit review](images/06-account-ou-review.png)
+![ADUC organizational unit review](/06-account-ou-review.png)
 
 ### 7. Validate the post-change account state
 
 I returned to PowerShell to check account attributes and memberships after the administrative changes. This is the most important evidence for confirming that account disablement and Finance group removal were applied in Active Directory.
 
-![PowerShell post-change verification](images/07-powershell-postchange-verification.png)
+![PowerShell post-change verification](/07-powershell-postchange-verification.png)
 
 ### 8. Verify Remote Desktop access is denied for the disabled account
 
@@ -79,7 +79,7 @@ After disabling David Thompson's Active Directory account, I attempted a new Rem
 **Error code:** `0xb07`  
 **Result:** **PASS — Remote Desktop connection rejected because the account was disabled.**
 
-![Client-1 Remote Desktop rejected because the account is disabled](images/08-disabled-account-rdp-denied.png)
+![Client-1 Remote Desktop rejected because the account is disabled](/08-disabled-account-rdp-denied.png)
 
 This is stronger than a generic network connectivity error: the message identifies **account disablement** as the reason the remote session could not be established. The screenshot demonstrates rejection of this new RDP connection; it does not establish that all existing sessions or independent application tokens were revoked.
 
